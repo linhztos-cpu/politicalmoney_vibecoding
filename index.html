@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2016 歷史檔案 | 政治獻金觀測站</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- 引入 Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;700&display=swap');
+        
+        :root {
+            --color-oxford-navy: #141e30;
+            --color-ecru: #fdfaf5;
+            --color-gold: #b08d57;
+            --color-slate-muted: #e2e8f0;
+        }
+
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: var(--color-ecru); 
+            color: var(--color-oxford-navy); 
+            margin: 0;
+            background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px);
+            background-size: 40px 40px;
+        }
+
+        h1, h2, h3, .serif-font { 
+            font-family: 'Noto Serif TC', serif; 
+            font-style: normal;
+        }
+
+        .btn-bespoke {
+            background-color: var(--color-oxford-navy);
+            color: white;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid var(--color-oxford-navy);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .btn-bespoke:hover {
+            background-color: transparent;
+            color: var(--color-oxford-navy);
+            letter-spacing: 0.3em;
+        }
+
+        .folio-card {
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border-top: 4px solid var(--color-gold);
+        }
+
+        .loading-screen {
+            position: fixed; inset: 0; background: var(--color-ecru);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100;
+        }
+
+        .drawer-slide {
+            transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        .animate-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 圖表容器樣式 */
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 300px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="loading" class="loading-screen">
+        <div class="p-8 border border-slate-200 text-center">
+            <h2 class="text-3xl serif-font font-bold mb-2 tracking-widest">歷史檔案館</h2>
+            <div class="h-[1px] w-12 bg-gold mx-auto mb-4" style="background: var(--color-gold)"></div>
+            <p class="text-[10px] uppercase tracking-[0.4em] opacity-40">正在讀取政治獻金分類帳...</p>
+        </div>
+    </div>
+
+    <nav class="h-24 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-40 px-12 flex justify-between items-center">
+        <div class="flex items-center gap-6 cursor-pointer" onclick="showSection('entrance')">
+            <div class="w-10 h-10 border border-slate-900 flex items-center justify-center">
+                <span class="font-bold text-xs">2016</span>
+            </div>
+            <div class="hidden md:block">
+                <h1 class="serif-font font-bold text-lg tracking-widest">政治金流分類帳</h1>
+                <p class="text-[9px] uppercase tracking-[0.2em] opacity-50 font-bold">第九屆立法委員選舉資料庫</p>
+            </div>
+        </div>
+        <div class="flex gap-12 text-[10px] font-bold uppercase tracking-[0.2em]">
+            <button onclick="showSection('entrance')" class="hover:text-gold transition-colors">搜尋桌面</button>
+            <button onclick="showSection('results')" class="hover:text-gold transition-colors">完整名冊</button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-20 px-8">
+        <section id="section-entrance" class="space-y-24">
+            <div class="text-center space-y-6">
+                <div class="inline-block px-4 py-1 border border-gold text-[10px] text-gold font-bold uppercase tracking-[0.4em] mb-4">
+                    經身份驗證存取
+                </div>
+                <h2 class="text-6xl md:text-7xl font-bold serif-font tracking-tighter">
+                    探尋金權軌跡
+                </h2>
+                <p class="max-w-2xl mx-auto text-slate-500 font-light leading-relaxed">
+                    本館典藏 2016 年第九屆立委大選之完整政治獻金紀錄，<br>
+                    旨在提供學術研究、新聞報導及社會大眾對民主體系運作之監督參考。
+                </p>
+            </div>
+
+            <div class="max-w-4xl mx-auto folio-card p-12 md:p-20 relative">
+                <div class="grid md:grid-cols-2 gap-16">
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">關鍵字查詢 / REGISTER SEARCH</label>
+                        <input type="text" id="main-search" placeholder="輸入名諱或政黨 (如: 民進黨)..." 
+                            class="w-full bg-transparent border-b border-slate-200 py-4 outline-none focus:border-gold transition-all text-xl serif-font placeholder:opacity-20"
+                            onkeypress="if(event.key === 'Enter') handleMainSearch()">
+                    </div>
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">類別目錄 / CATALOGUES</label>
+                        <div class="relative">
+                            <select id="dropdown-filter" onchange="handleDropdownChange(this)"
+                                class="w-full bg-transparent border-b border-slate-200 py-4 outline-none focus:border-gold appearance-none cursor-pointer serif-font text-lg">
+                                <option value="">-- 選取目錄 --</option>
+                                <optgroup label="政黨 / Parties" id="optgroup-parties"></optgroup>
+                                <optgroup label="候選人 / Candidates" id="optgroup-candidates"></optgroup>
+                            </select>
+                            <i data-lucide="chevron-down" class="absolute right-0 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="handleMainSearch()" class="mt-16 btn-bespoke w-full py-6 font-bold text-xs">
+                    調閱檔案庫數據
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div onclick="quickSearch('民進黨')" class="text-center p-6 border border-slate-100 bg-white hover:border-gold cursor-pointer transition-all">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">執政聯盟</p>
+                    <p class="serif-font font-bold">民進黨</p>
+                </div>
+                <div onclick="quickSearch('國民黨')" class="text-center p-6 border border-slate-100 bg-white hover:border-gold cursor-pointer transition-all">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">在野監督</p>
+                    <p class="serif-font font-bold">國民黨</p>
+                </div>
+                <div onclick="quickSearch('時代力量')" class="text-center p-6 border border-slate-100 bg-white hover:border-gold cursor-pointer transition-all">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">新興勢力</p>
+                    <p class="serif-font font-bold">時代力量</p>
+                </div>
+                <div onclick="showResultsBySort('總收入')" class="text-center p-6 border border-slate-100 bg-white hover:border-gold cursor-pointer transition-all">
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">排行榜</p>
+                    <p class="serif-font font-bold">收入規模排行</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-results" class="hidden animate-up">
+            <div class="flex justify-between items-end mb-12 border-b border-slate-200 pb-8">
+                <div>
+                    <h3 class="text-3xl serif-font font-bold italic tracking-tight">紀錄登記冊</h3>
+                    <p id="result-count" class="text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 mt-2"></p>
+                </div>
+                <button onclick="showSection('entrance')" class="text-[10px] font-bold uppercase tracking-[0.2em] px-8 py-3 border border-slate-200 hover:bg-slate-900 hover:text-white transition-all">
+                    返回搜尋
+                </button>
+            </div>
+
+            <div class="bg-white border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b border-slate-100 text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400">
+                        <tr>
+                            <th class="px-10 py-6">身份資訊</th>
+                            <th class="px-10 py-6">黨籍</th>
+                            <th class="px-10 py-6 text-right">得票率</th>
+                            <th class="px-10 py-6 text-right">總收入</th>
+                            <th class="px-10 py-6 text-right"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody" class="divide-y divide-slate-50 text-sm"></tbody>
+                </table>
+                <div class="px-10 py-8 bg-slate-50 flex justify-between items-center">
+                    <button id="prev-page" onclick="changePage(-1)" class="text-[10px] font-bold tracking-widest disabled:opacity-20 flex items-center gap-2"><i data-lucide="chevron-left" class="w-4 h-4"></i> 上一頁</button>
+                    <span id="page-info" class="text-[10px] font-bold tracking-widest text-slate-300">第 01 頁</span>
+                    <button id="next-page" onclick="changePage(1)" class="text-[10px] font-bold tracking-widest disabled:opacity-20 flex items-center gap-2">下一頁 <i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="candidate-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-xl bg-white drawer-slide transform translate-x-full border-l border-gold shadow-2xl flex flex-col">
+            <div class="p-12 border-b border-slate-50 flex justify-between items-center bg-[#fcfaf7]">
+                <div>
+                    <h2 class="text-4xl font-bold serif-font" id="modal-name">---</h2>
+                    <p class="text-[10px] uppercase tracking-[0.4em] text-gold font-bold mt-2" id="modal-party-info"></p>
+                </div>
+                <button onclick="closeModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div id="modal-content" class="flex-1 overflow-y-auto p-12 space-y-16"></div>
+            <div class="p-8 border-t border-slate-50 bg-slate-50 text-center">
+                <p class="text-[9px] font-bold uppercase tracking-[0.5em] opacity-30">檔案流水號: 2016-L9-CUST</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="py-20 border-t border-slate-200 mt-20 text-center bg-white">
+        <div class="max-w-xs mx-auto space-y-4">
+            <h4 class="serif-font font-bold italic tracking-widest opacity-20">檔案館 | THE ARCHIVE</h4>
+            <p class="text-[9px] uppercase tracking-[0.4em] leading-loose opacity-40 font-bold">
+                政治獻金觀測站 典藏專案<br>
+                始於 2016 年
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        const csvDataString = `地區,姓名,地區排序,得票數,推薦政黨,得票率,當選註記,是否現任,委員會,性別,出生年次,捐贈企業數,總收入,個人捐贈收入,個人捐贈比例,营利事業捐贈收入,营利事業捐贈比例,政黨捐贈收入,政黨捐贈收入比例,人民團體捐贈收入,人民團體收入比例,匿名捐贈收入,匿名捐贈比例,其他收入,其他收入比例,超過三萬元之收入,總支出
+新竹市第01選區,柯建銘,5,90642,民主進步黨,41.33%,*,是,司法法制,男,1951,49,51641147,"21,483,455",41.60%,26915133,52.12%,0,0.00%,"3,020,000",5.85%,"222,011",0.43%,548,0.00%,"50,082,288","52,187,931"
+高雄市第02選區,邱志偉,15,110819,民主進步黨,63.23%,*,是,經濟,男,1972,133,38603507,"16,633,768",43.09%,21244000,55.03%,0,0.00%,"715,000",1.85%,"10,739",0.03%,0,0.00%,"32,958,187","19,531,349"
+新北市第09選區,林德福,3,82761,中國國民黨,52.44%,*,是,財政,男,1953,52,24628864,"10,410,486",42.27%,12705000,51.59%,0,0.00%,"1,010,000",4.10%,"502,400",2.04%,"978",0.00%,"18,375,000","21,438,407"
+新竹市第01選區,鄭正鈐,5,79951,中國國民黨,36.46%,,否,,男,1969,12,13221980,"11,720,200",88.64%,490000,3.71%,0,0.00%,"1,010,000",7.64%,"1,780",0.01%,"0",0.00%,"6,760,000","13,101,167"
+新竹市第01選區,邱顯智,5,36309,時代力量,16.55%,,否,,男,1976,0,1024800,"1,021,700",99.70%,0,0.00%,0,0.00%,0,0.00%,"3,100",0.30%,0,0.00%,0,1172020
+新北市第09選區,董建一,3,3040,中華民國機車黨,1.92%,,否,,男,1973,0,260110,"209,306",80.47%,0,0.00%,0,0.00%,0,0.00%,"50,729",19.50%,75,0.00%,0,"260,932"
+新北市第12選區,陳永順,3,4892,信心希望聯盟,3.13%,,否,,男,1965,0,1003334,"95,700",9.54%,0,0.00%,"900,000",94.87%,0,0.00%,"7,620",0.75%,14,0.00%,"900,000","1,016,799"
+新竹市第01選區,魏揚,5,723,軍公教聯盟黨,0.32%,,否,,男,1976,0,201000,"1,000",0.50%,0,0.00%,0,0.00%,"200,000",99.50%,0,0.00%,0,0.00%,0,200803`;
+
+        const partyAliases = {
+            "民進黨": "民主進步黨",
+            "國民黨": "中國國民黨",
+            "機車黨": "中華民國機車黨",
+            "信望盟": "信心希望聯盟"
+        };
+
+        let rawData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        let currentChart = null; // 用於存放 Chart 實例
+        const itemsPerPage = 8;
+
+        window.onload = function() {
+            lucide.createIcons();
+            setTimeout(() => {
+                parseData();
+                document.getElementById('loading').style.display = 'none';
+            }, 800);
+        };
+
+        function parseData() {
+            Papa.parse(csvDataString, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(res) {
+                    rawData = res.data.map(row => {
+                        const clean = {};
+                        for (let k in row) clean[k.trim().replace(/^\uFEFF/, "")] = row[k];
+                        return clean;
+                    });
+                    filteredData = [...rawData];
+                    setupDropdowns();
+                }
+            });
+        }
+
+        function setupDropdowns() {
+            const partiesGroup = document.getElementById('optgroup-parties');
+            const candidatesGroup = document.getElementById('optgroup-candidates');
+            const parties = [...new Set(rawData.map(d => d.推薦政黨).filter(p => p))].sort();
+            parties.forEach(p => partiesGroup.appendChild(new Option(p, `PARTY:${p}`)));
+            const names = [...new Set(rawData.map(d => d.姓名).filter(n => n))].sort();
+            names.forEach(n => candidatesGroup.appendChild(new Option(n, `NAME:${n}`)));
+        }
+
+        function handleDropdownChange(select) {
+            const val = select.value;
+            if (!val) return;
+            const [type, content] = val.split(':');
+            filteredData = type === 'PARTY' 
+                ? rawData.filter(d => d.推薦政黨 === content) 
+                : rawData.filter(d => d.姓名 === content);
+            currentPage = 1;
+            renderResults();
+            showSection('results');
+            select.value = "";
+        }
+
+        function handleMainSearch() {
+            let q = document.getElementById('main-search').value.trim().toLowerCase();
+            if (!q) {
+                filteredData = [...rawData];
+            } else {
+                const normalizedQ = partyAliases[q] || q;
+                filteredData = rawData.filter(d => {
+                    const party = String(d.推薦政黨 || "").toLowerCase();
+                    const name = String(d.姓名 || "").toLowerCase();
+                    const region = String(d.地區 || "").toLowerCase();
+                    return party.includes(normalizedQ) || name.includes(q) || region.includes(q);
+                });
+            }
+            currentPage = 1;
+            renderResults();
+            showSection('results');
+        }
+
+        function quickSearch(val) {
+            document.getElementById('main-search').value = val;
+            handleMainSearch();
+        }
+
+        function showSection(id) {
+            const sections = ['entrance', 'results'];
+            sections.forEach(s => {
+                document.getElementById(`section-${s}`).classList.toggle('hidden', s !== id);
+            });
+            window.scrollTo(0, 0);
+        }
+
+        function showResultsBySort(field) {
+            filteredData.sort((a, b) => parseNum(b[field]) - parseNum(a[field]));
+            currentPage = 1;
+            renderResults();
+            showSection('results');
+        }
+
+        function renderResults() {
+            const tbody = document.getElementById('results-tbody');
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const data = filteredData.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage);
+            
+            tbody.innerHTML = data.length ? data.map(item => `
+                <tr class="group hover:bg-[#fdfaf5] transition-all cursor-pointer" onclick='viewDetails("${item.姓名}")'>
+                    <td class="px-10 py-10">
+                        <p class="text-xl serif-font font-bold text-slate-900 group-hover:text-gold transition-colors">${item.姓名}</p>
+                        <p class="text-[9px] font-bold uppercase tracking-widest opacity-30 mt-1">${item.地區}</p>
+                    </td>
+                    <td class="px-10 py-10">
+                        <span class="text-[10px] font-bold uppercase tracking-widest px-3 py-1 border border-slate-100">${item.推薦政黨 || '無黨籍'}</span>
+                    </td>
+                    <td class="px-10 py-10 text-right serif-font font-bold text-lg italic">${item.得票率}</td>
+                    <td class="px-10 py-10 text-right font-medium text-slate-800">${formatCurrency(item.總收入)}</td>
+                    <td class="px-10 py-10 text-right">
+                        <i data-lucide="arrow-right-circle" class="w-5 h-5 text-slate-100 group-hover:text-gold transition-colors ml-auto"></i>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="5" class="py-20 text-center opacity-20 serif-font italic">查無檔案記錄 / NO RECORDS FOUND</td></tr>';
+            
+            document.getElementById('page-info').innerText = `第 ${currentPage} 頁 / 共 ${totalPages || 1} 頁`;
+            document.getElementById('prev-page').disabled = currentPage === 1;
+            document.getElementById('next-page').disabled = currentPage >= totalPages || totalPages === 0;
+            document.getElementById('result-count').innerText = `${filteredData.length} 份已索引之檔案資料`;
+            lucide.createIcons();
+        }
+
+        function viewDetails(name) {
+            const item = rawData.find(d => d.姓名 === name);
+            if (!item) return;
+            document.getElementById('modal-name').innerText = item.姓名;
+            document.getElementById('modal-party-info').innerText = `${item.推薦政黨} | ${item.地區}`;
+            
+            // 構建 Modal 內容，包含圓餅圖容器
+            document.getElementById('modal-content').innerHTML = `
+                <div class="space-y-16">
+                    <div class="flex justify-between items-start gap-8">
+                        <div class="flex-1 border-r border-slate-100 pr-8">
+                            <p class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-2">總收入 / REVENUE</p>
+                            <p class="text-3xl serif-font font-bold">${formatCurrency(item.總收入)}</p>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-2">總支出 / EXPENSES</p>
+                            <p class="text-3xl serif-font font-bold text-[#6b1d1d]">${formatCurrency(item.總支出)}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-8 flex flex-col items-center">
+                        <div class="w-full">
+                            <h4 class="text-[10px] font-bold uppercase tracking-[0.4em] text-gold border-b border-gold/20 pb-4 mb-8">收入來源分析 (點擊圓餅查看金額)</h4>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="incomeChart"></canvas>
+                        </div>
+                        <div id="chart-legend" class="grid grid-cols-2 gap-4 w-full text-[10px] uppercase tracking-widest mt-8"></div>
+                    </div>
+
+                    <div class="p-8 border border-slate-100 bg-slate-50 grid grid-cols-2 gap-8 text-[11px]">
+                        <div><span class="block text-[8px] font-bold opacity-30 uppercase tracking-widest mb-1">當選狀態</span><span class="font-bold serif-font">${item.當選註記 === '*' ? '當選' : '未當選'}</span></div>
+                        <div><span class="block text-[8px] font-bold opacity-30 uppercase tracking-widest mb-1">是否現任</span><span class="font-bold serif-font">${item.是否現任}</span></div>
+                        <div><span class="block text-[8px] font-bold opacity-30 uppercase tracking-widest mb-1">所屬委員會</span><span class="font-bold serif-font">${item.委員會 || '-'}</span></div>
+                        <div><span class="block text-[8px] font-bold opacity-30 uppercase tracking-widest mb-1">出生年次</span><span class="font-bold serif-font">${item.出生年次}</span></div>
+                    </div>
+                </div>
+            `;
+
+            // 準備圖表數據
+            const labels = ["個人捐贈", "營利事業捐贈", "政黨捐贈", "人民團體捐贈", "匿名捐贈"];
+            const values = [
+                parseNum(item.個人捐贈收入),
+                parseNum(item.营利事業捐贈收入),
+                parseNum(item.政黨捐贈收入),
+                parseNum(item.人民團體捐贈收入),
+                parseNum(item.匿名捐贈收入)
+            ];
+            const colors = ["#141e30", "#b08d57", "#2d3748", "#718096", "#cbd5e0"];
+
+            // 初始化 Chart.js
+            setTimeout(() => {
+                const ctx = document.getElementById('incomeChart').getContext('2d');
+                
+                // 清除舊圖表
+                if (currentChart) currentChart.destroy();
+
+                currentChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }, // 我們自訂圖例
+                            tooltip: {
+                                enabled: true,
+                                backgroundColor: 'rgba(20, 30, 48, 0.9)',
+                                titleFont: { family: 'Noto Sans TC', size: 12 },
+                                bodyFont: { family: 'Noto Sans TC', size: 14 },
+                                padding: 12,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                        return `${label}: NT$ ${value.toLocaleString()} (${percentage})`;
+                                    }
+                                }
+                            }
+                        },
+                        // 點擊事件
+                        onClick: (evt, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const label = labels[index];
+                                const val = values[index];
+                                // 這裡可以觸發額外的動作，例如顯示在特定區塊
+                            }
+                        }
+                    }
+                });
+
+                // 生成自訂圖例
+                const legendContainer = document.getElementById('chart-legend');
+                labels.forEach((label, i) => {
+                    const total = values.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? ((values[i] / total) * 100).toFixed(1) : 0;
+                    legendContainer.innerHTML += `
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2" style="background: ${colors[i]}"></div>
+                            <span class="opacity-60">${label}</span>
+                            <span class="font-bold ml-auto">${percentage}%</span>
+                        </div>
+                    `;
+                });
+            }, 100);
+
+            const modal = document.getElementById('candidate-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.querySelector('.drawer-slide').classList.remove('translate-x-full'), 10);
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
+
+        function parseNum(str) { return parseFloat(String(str || "0").replace(/[,%]/g, '')) || 0; }
+        function formatCurrency(val) { return "NT$ " + parseNum(val).toLocaleString(); }
+        
+        function closeModal() { 
+            const drawer = document.querySelector('.drawer-slide');
+            drawer.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.getElementById('candidate-modal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }, 500);
+        }
+        function changePage(d) { currentPage += d; renderResults(); window.scrollTo(0, 0); }
+    </script>
+</body>
+</html>
